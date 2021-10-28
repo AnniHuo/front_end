@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="axios.min.js"></script>
+    <script src="locationtra.js"></script>
+    <style>
+        html, body{
+            width: 100%;
+            height: 100%;
+        }
+        .container{
+            width: 100%;
+            height: 100%;
+            background-color: #262A35;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title{
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px;
+        }
+        .title_context{
+            display: block;
+            color: #F4F6FC;
+            font-weight: bold;
+            font-size: 25px;
+        }
+        .note{
+            width: 100%;
+            display: flex;
+            color: #F4F6FC;
+            margin-left: 10px;
+        }
+        .address_input{
+            width: 95%;
+            margin: 20px;
+            height: 300px;
+            max-height: 40%;
+        }
+        textarea{
+            background-color: #292C38;
+            color: #F4F6FC;
+            width:100%;
+            height:100%;
+            font-size: 20px;
+        }
+        .buttons{
+            width: 95%;
+            display: flex;
+            flex-direction: row-reverse;
+        }
+        button{
+            background-color: rgba(66, 133, 244, 0.2);
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid #4285F4;
+            color: #4285F4;
+            margin: 10px;
+        }
+        .result{
+            width: 95%;
+            color: #F4F6FC;
+            overflow: auto;
+            margin-bottom: 10px;
+            max-height: 50%;
+        }
+        table{
+            min-width: 100%;
+        }
+        td{
+            min-width: 150px;
+        }
+    </style>
+    <script src="axios.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <div style="width: 5px; height: 25px; background-color: #5096FF; margin-right: 5px"></div>
+            <span class="title_context">批量转换地址为经纬度</span>
+        </div>
+        <div class="note">
+            <svg t="1622981131811" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="674" width="18" height="18">
+                <path d="M927 679.5L635.7 511.7 927 343.9c29.1-14.6 43.7-58.3 22.1-87.4-14.6-29.1-58.3-43.7-87.4-22.1L570.5 402.2V67.8c7-36.7-22.1-65.8-58.3-65.8-36.1 0-65.8 29.1-65.8 65.8v335L155.1 235c-22.1-21.6-65.8-7-80.4 22.1-14.6 29.1-7.6 72.8 22.1 87.4l291.3 167.8L96.9 680.1c-29.1 14.6-43.7 58.3-21.6 87.4 14.6 22.1 36.7 29.1 58.3 29.1 7 0 21.6 0 29.1-7.6L454 621.2v335c-7.6 36.7 22.1 65.8 58.3 65.8 36.1 0 65.2-29.1 65.2-65.8v-335L868.7 789c7.6 7.6 22.1 7.6 29.1 7.6 22.1 0 43.7-14.6 58.3-29.1 7-29.8 0-73.5-29.1-88z" fill="#E52323" p-id="675"></path>
+            </svg>
+        <span style="margin-left: 5px">在下面输入地址，每个地址占一行:</span>
+        </div>
+        <div class="address_input">
+            <textarea id="ipt"></textarea>
+        </div>
+        <div class="buttons">
+            <button id="start">开始解析</button>
+            <button id="clear">清空结果</button>
+        </div>
+        <div class="result">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>原始地址</th>
+                        <th>country</th>
+                        <th>province</th>
+                        <th>city</th>
+                        <th>citycode</th>
+                        <th>district</th>
+                        <th>formatted_address</th>
+                        <th>level</th>
+                        <th>gcj location</th>
+                        <th>lng</th>
+                        <th>lat</th>
+                    </tr>
+                </thead>
+                <tbody id="location_info"></tbody>
+            </table>
+        </div>
+    </div>
+</body>
+<script>
+    const gaodeAk = "56dd73a873bfe0bdd7c2984fdd22efe3";
+    const geoCodingUrl = "https://restapi.amap.com/v3/geocode/geo?key=" + gaodeAk + "&address=";
+
+    const textInput = document.getElementById("ipt");
+    const startBtn = document.getElementById("start");
+    const clearBtn = document.getElementById("clear");
+    const locationInfo = document.getElementById("location_info");
+
+    const clearResult = () => {
+        locationInfo.innerHTML = "";
+        textInput.value = "";
+    }
+
+    const readContext = () => {
+        return textInput.value.split('\n')
+    }
+
+    const getlocation = () => {
+        let context = readContext();
+        locationInfo.innerHTML = "";
+        context.forEach(item => {
+            axios.get(geoCodingUrl + item)
+                .then((response) => {
+                    // 处理成功情况
+                    let data = response.data;
+                    if (data.status === "1"){
+                        let info = data["geocodes"][0];
+                        let gcjLocation = info['location'].split(',')
+                        let wgs84Location = coordtransform.gcj02towgs84(gcjLocation[0], gcjLocation[1])
+                        locationInfo.innerHTML = locationInfo.innerHTML
+                            +
+                            `
+                            <tr>
+                                <td>${item}</td>
+                                <td>${info['country']}</td>
+                                <td>${info['province']}</td>
+                                <td>${info['city']}</td>
+                                <td>${info['citycode']}</td>
+                                <td>${info['district']}</td>
+                                <td>${info['formatted_address']}</td>
+                                <td>${info['level']}</td>
+                                <td>${info['location']}</td>
+                                <td>${wgs84Location[0]}</td>
+                                <td>${wgs84Location[1]}</td>
+                            </tr>
+                            `
+                    }
+                })
+                .catch((error) => {
+                    // 处理错误情况
+                    console.log(error);
+                })
+        })
+        return context
+    }
+
+    startBtn.addEventListener("click", getlocation);
+    clearBtn.addEventListener("click", clearResult);
+</script>
+</html>
